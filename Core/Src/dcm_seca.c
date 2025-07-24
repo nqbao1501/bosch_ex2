@@ -35,13 +35,13 @@ void SID_27_Practice(){
 	if (sub_func == 1){
 		if (len != 2){
 			//Loi 0x13: sai format
-			prepare_negetive_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x13);
+			prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x13);
 			return;
 		}
 
 		if (security_access_granted){
 			//goi seed khi he thong da mo roi -> loi 0x10
-			prepare_negetive_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x10);
+			prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x10);
 			return;
 		}
 
@@ -58,13 +58,13 @@ void SID_27_Practice(){
 	if (sub_func == 2){
 		if (len != 6){
 			//Loi 0x13: sai format
-			prepare_negetive_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x13);
+			prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x13);
 			return;
 		}
 
 		if (!seed_sent){
 			//Chua gui 27 01 de lay seed ma da gui 27 02 voi key -> loi 0x10
-			prepare_negetive_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x10);
+			prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x10);
 			return;
 		}
 
@@ -73,7 +73,7 @@ void SID_27_Practice(){
 
 		if (!validate_key(key_from_user)){
 			//key khong dung voi seed -> loi 0x35
-			prepare_negetive_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x35);
+			prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x35);
 			return;
 		}
 

@@ -23,12 +23,13 @@ extern CAN_TxHeaderTypeDef CAN1_pHeader;
 extern CAN_TxHeaderTypeDef CAN2_pHeader;
 extern bool security_access_granted ;
 extern bool seed_sent ;
+extern uint16_t ECU_ID;
 
 extern ADC_HandleTypeDef hadc1;
 
 void prepare_CAN_TX_frame(uint8_t* CAN_TX_frame, uint8_t* data, uint8_t data_count);
 void CAN2_SendMessage(uint8_t* data);
 void CAN1_SendMessage(uint8_t* data);
-void prepare_negetive_response_buffer(uint8_t* CAN_TX_frame, uint8_t* buffer, uint8_t SID, uint8_t NRC);
+void prepare_negative_response_buffer(uint8_t* CAN_TX_frame, uint8_t* buffer, uint8_t SID, uint8_t NRC);
 
 #endif

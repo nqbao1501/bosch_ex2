@@ -81,6 +81,9 @@ uint8_t  Flg_Consecutive = 0;
 uint8_t msg_counter = 0;
 uint8_t prev_msg_counter = 0;
 
+uint16_t ECU_ID = 0x0078;
+uint16_t Tester_ID = 0x00A2;
+
 
 
 typedef enum{
@@ -194,6 +197,10 @@ void parse_hex_string(const char *input, uint8_t *output, uint8_t *count) {
     memset(uart_rx_buffer, 0, sizeof(uart_rx_buffer));
 }
 
+void set_LED (bool LED_State) {
+	if (LED_State) HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+	else HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+}
 /* USER CODE END 0 */
 
 /**
@@ -243,6 +250,9 @@ int main(void)
 
   while (1)
   {
+	  MX_CAN1_Setup();
+	  MX_CAN2_Setup();
+	  set_LED(security_access_granted);
 	  switch (currentState){
 	  		case STATE_PREPARING_FOR_CAN2_TRANSMISSION:
 	  			currentState = STATE_CAN2_TRANSMISSION;
@@ -436,16 +446,7 @@ static void MX_CAN1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN1_Init 2 */
-  	CAN1_sFilterConfig.SlaveStartFilterBank = 14;
-	CAN1_sFilterConfig.FilterBank = 0;
-	CAN1_sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	CAN1_sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-	CAN1_sFilterConfig.FilterIdHigh = 0x0A2 << 5;
-	CAN1_sFilterConfig.FilterIdLow = 0x0000;
-	CAN1_sFilterConfig.FilterMaskIdHigh = 0x7FF << 5;
-	CAN1_sFilterConfig.FilterMaskIdLow = 0x0000;
-	CAN1_sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-	CAN1_sFilterConfig.FilterActivation = ENABLE;
+
   /* USER CODE END CAN1_Init 2 */
 
 }
@@ -483,15 +484,7 @@ static void MX_CAN2_Init(void)
   }
   /* USER CODE BEGIN CAN2_Init 2 */
 	//Cần config các setting của filter ở đây
-	CAN2_sFilterConfig.FilterBank = 14;
-	CAN2_sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	CAN2_sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-	CAN2_sFilterConfig.FilterIdHigh = 0x012 << 5;
-	CAN2_sFilterConfig.FilterIdLow = 0x0000;
-	CAN2_sFilterConfig.FilterMaskIdHigh = 0x7FF << 5;
-	CAN2_sFilterConfig.FilterMaskIdLow = 0x0000;
-	CAN2_sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-	CAN2_sFilterConfig.FilterActivation = ENABLE;
+
 
   /* USER CODE END CAN2_Init 2 */
 
@@ -547,6 +540,9 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+
   /*Configure GPIO pins : PC13 PC4 PC5 PC6
                            PC7 */
   GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6
@@ -567,6 +563,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PB0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
@@ -579,12 +582,23 @@ static void MX_GPIO_Init(void)
 
 void MX_CAN1_Setup()
 {
+  	CAN1_sFilterConfig.SlaveStartFilterBank = 14;
+	CAN1_sFilterConfig.FilterBank = 0;
+	CAN1_sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	CAN1_sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	CAN1_sFilterConfig.FilterIdHigh = Tester_ID << 5;
+	CAN1_sFilterConfig.FilterIdLow = 0x0000;
+	CAN1_sFilterConfig.FilterMaskIdHigh = 0x7FF << 5;
+	CAN1_sFilterConfig.FilterMaskIdLow = 0x0000;
+	CAN1_sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	CAN1_sFilterConfig.FilterActivation = ENABLE;
+
 	HAL_CAN_ConfigFilter(&hcan1, &CAN1_sFilterConfig);
 	HAL_CAN_Start(&hcan1);
 	HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
 
 	//Cần config header của CAN1
-    CAN1_pHeader.StdId = 0x012;                   // Set TX message ID
+    CAN1_pHeader.StdId = ECU_ID;                   // Set TX message ID
     CAN1_pHeader.IDE = CAN_ID_STD;                // Use standard ID
     CAN1_pHeader.RTR = CAN_RTR_DATA;              // Sending data, not a request
     CAN1_pHeader.DLC = 8;                         // 8 bytes of data
@@ -592,12 +606,22 @@ void MX_CAN1_Setup()
 }
 void MX_CAN2_Setup()
 {
+	CAN2_sFilterConfig.FilterBank = 14;
+	CAN2_sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	CAN2_sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	CAN2_sFilterConfig.FilterIdHigh = ECU_ID << 5;
+	CAN2_sFilterConfig.FilterIdLow = 0x0000;
+	CAN2_sFilterConfig.FilterMaskIdHigh = 0x7FF << 5;
+	CAN2_sFilterConfig.FilterMaskIdLow = 0x0000;
+	CAN2_sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	CAN2_sFilterConfig.FilterActivation = ENABLE;
+
 	HAL_CAN_ConfigFilter(&hcan2, &CAN2_sFilterConfig);
 	HAL_CAN_Start(&hcan2);
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
 	//Cần config header của CAN2
-    CAN2_pHeader.StdId = 0x0A2;                   // Set TX message ID
+    CAN2_pHeader.StdId = Tester_ID;                // Set TX message ID
     CAN2_pHeader.IDE = CAN_ID_STD;                // Use standard ID
     CAN2_pHeader.RTR = CAN_RTR_DATA;              // Sending data, not a request
     CAN2_pHeader.DLC = 8;                         // 8 bytes of data

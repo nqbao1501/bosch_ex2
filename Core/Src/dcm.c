@@ -32,7 +32,7 @@ void CAN1_SendMessage(uint8_t* data)
     uint32_t txMailbox;
 	HAL_CAN_AddTxMessage(&hcan1, &CAN1_pHeader, CAN1_DATA_TX, &txMailbox);
 }
-void prepare_negetive_response_buffer(uint8_t* CAN_TX_frame, uint8_t* buffer, uint8_t SID, uint8_t NRC){
+void prepare_negative_response_buffer(uint8_t* CAN_TX_frame, uint8_t* buffer, uint8_t SID, uint8_t NRC){
 	buffer[0] = 0x7F;
 	buffer[1] = SID;
 	buffer[2] = NRC;

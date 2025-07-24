@@ -1,4 +1,4 @@
 ../Core/Src/dcm.c:11:6:prepare_CAN_TX_frame	3
 ../Core/Src/dcm.c:24:6:CAN2_SendMessage	1
 ../Core/Src/dcm.c:30:6:CAN1_SendMessage	1
-../Core/Src/dcm.c:35:6:prepare_negetive_response_buffer	1
+../Core/Src/dcm.c:35:6:prepare_negative_response_buffer	1
