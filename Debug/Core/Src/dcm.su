@@ -1,4 +1,8 @@
 ../Core/Src/dcm.c:11:6:prepare_CAN_TX_frame	32	static
-../Core/Src/dcm.c:24:6:CAN2_SendMessage	24	static
-../Core/Src/dcm.c:30:6:CAN1_SendMessage	24	static
-../Core/Src/dcm.c:35:6:prepare_negative_response_buffer	24	static
+../Core/Src/dcm.c:24:6:prepare_CAN_First_Frame	32	static
+../Core/Src/dcm.c:38:6:prepare_CAN_Flow_Control_Frame	24	static
+../Core/Src/dcm.c:51:6:prepare_One_CAN_Consecutive_Frame	32	static
+../Core/Src/dcm.c:62:6:prepare_CAN_Consecutive_Frames	32	static
+../Core/Src/dcm.c:89:6:CAN2_SendMessage	24	static
+../Core/Src/dcm.c:95:6:CAN1_SendMessage	24	static
+../Core/Src/dcm.c:100:6:prepare_negative_response_buffer	24	static

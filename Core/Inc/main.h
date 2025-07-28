@@ -90,7 +90,9 @@ extern uint8_t CAN1_DATA_TX[8];
 extern uint8_t CAN1_DATA_RX[8];
 extern uint8_t CAN2_DATA_TX[8];
 extern uint8_t CAN2_DATA_RX[8];
-
+extern uint8_t block_size;
+extern uint8_t ST_min;
+extern uint8_t consecutive_sequence_number;
 extern uint8_t Flg_Consecutive;
 
 extern unsigned int TimeStamp;

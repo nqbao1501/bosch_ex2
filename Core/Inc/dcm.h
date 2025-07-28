@@ -28,6 +28,10 @@ extern uint16_t ECU_ID;
 extern ADC_HandleTypeDef hadc1;
 
 void prepare_CAN_TX_frame(uint8_t* CAN_TX_frame, uint8_t* data, uint8_t data_count);
+void prepare_CAN_First_Frame (uint8_t* CAN_TX_frame, uint8_t* data, uint16_t data_count) ;
+void prepare_CAN_Flow_Control_Frame (uint8_t* CAN_TX_frame);
+void prepare_One_CAN_Consecutive_Frame (uint8_t* CAN_TX_frame, uint8_t* data, uint8_t data_count);
+void prepare_CAN_Consecutive_Frames (uint8_t* CAN_TX_frame, uint8_t* data, uint16_t data_count);
 void CAN2_SendMessage(uint8_t* data);
 void CAN1_SendMessage(uint8_t* data);
 void prepare_negative_response_buffer(uint8_t* CAN_TX_frame, uint8_t* buffer, uint8_t SID, uint8_t NRC);

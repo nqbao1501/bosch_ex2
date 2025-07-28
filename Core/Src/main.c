@@ -84,6 +84,11 @@ uint8_t prev_msg_counter = 0;
 uint16_t ECU_ID = 0x0078;
 uint16_t Tester_ID = 0x00A2;
 
+uint8_t block_size = 0x08;
+uint8_t ST_min = 0x19; //25 in decimal
+
+uint8_t consecutive_sequence_number = 0;
+
 
 
 typedef enum{
@@ -92,7 +97,12 @@ typedef enum{
 	STATE_READING_CAN1_RECEPTION,
 	STATE_PREPARING_FOR_CAN1_TRANSMISSION,
 	STATE_CAN1_TRANSMISSION,
-	STATE_READING_CAN2_RECEPTION,
+	STATE_PREPARING_FOR_CAN2_FLOW_CONTROL,
+	STATE_PREPARING_FOR_CAN1_CONSECUTIVE_FRAME,
+	STATE_PREPARING_FOR_CAN2_FIRST_FRAME,
+	STATE_PREPARING_FOR_CAN1_FLOW_CONTROL,
+	STATE_PREPARING_FOR_CAN2_CONSECUTIVE_FRAME,
+	STATE_PREPARING_FOR_CAN1_SINGLE_FRAME
 }SystemState;
 
 SystemState currentState = STATE_PREPARING_FOR_CAN2_TRANSMISSION;
@@ -110,8 +120,10 @@ uint8_t uart_byte;
 uint8_t parsed_values_from_uart_count = 0;
 uint8_t parsed_values_from_uart[20];
 
-uint8_t seed[4];
-uint8_t key[4];
+uint8_t seed[6];
+uint8_t key[6];
+uint8_t key_from_user[6];
+uint8_t SID;
 
 bool seed_sent;
 bool security_access_granted;
@@ -148,61 +160,32 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         	for (uint8_t i = 0; i < 8; i++){
         		CAN1_DATA_RX[i] = rxData[i];
         	}
-        	currentState = STATE_READING_CAN1_RECEPTION;
-        }
+        if ((CAN1_DATA_RX[0] >> 4) == 0x00) currentState = STATE_READING_CAN1_RECEPTION;
+        if ((CAN1_DATA_RX[0] >> 4) == 0x01) currentState = STATE_PREPARING_FOR_CAN1_FLOW_CONTROL;
+        if ((CAN1_DATA_RX[0] >> 4) == 0x02) currentState = STATE_PREPARING_FOR_CAN1_SINGLE_FRAME;
+        if ((CAN1_DATA_RX[0] >> 4) == 0x03) currentState = STATE_PREPARING_FOR_CAN1_CONSECUTIVE_FRAME;
+
+    }
     }
     if (hcan->Instance == CAN2) {
         if (currentState == STATE_CAN1_TRANSMISSION){
         	for (uint8_t i = 0; i < 8; i++){
         		CAN2_DATA_RX[i] = rxData[i];
         	}
-        	currentState = STATE_PREPARING_FOR_CAN2_TRANSMISSION;
+        if ((CAN2_DATA_RX[0] >> 4) == 0x00) currentState = STATE_PREPARING_FOR_CAN2_TRANSMISSION;
+        if ((CAN2_DATA_RX[0] >> 4) == 0x01) currentState = STATE_PREPARING_FOR_CAN2_FLOW_CONTROL;
+        if ((CAN2_DATA_RX[0] >> 4) == 0x02) currentState = STATE_PREPARING_FOR_CAN2_TRANSMISSION;
+        if ((CAN2_DATA_RX[0] >> 4) == 0x03) currentState = STATE_PREPARING_FOR_CAN2_CONSECUTIVE_FRAME;
+
         }
 
     }
-}
-
-
-void receive_uart_string(void)
-{
-    uart_rx_index = 0;
-    while (1)
-    {
-        HAL_UART_Receive(&huart3, &uart_byte, 1, HAL_MAX_DELAY);
-        if (uart_byte == '\r' || uart_byte == '\n') {
-            uart_rx_buffer[uart_rx_index] = '\0'; // null-terminate
-            break;
-        } else {
-            uart_rx_buffer[uart_rx_index++] = uart_byte;
-            if (uart_rx_index >= UART_RX_BUFFER_SIZE)
-                uart_rx_index = 0; // reset if overflow
-        }
-    }
-
-    // Do something with the received string
-}
-
-// convert hex to uint8_t
-void parse_hex_string(const char *input, uint8_t *output, uint8_t *count) {
-    const char *ptr = input;
-    int value;
-    *count = 0;
-
-    while (sscanf(ptr, "%x", &value) == 1) {
-        output[(*count)++] = (uint8_t)value;
-
-        // Move ptr to the end of the current number
-        while (*ptr && *ptr != ' ') ptr++;   // Skip over the current number
-        while (*ptr == ' ') ptr++;           // Skip any spaces
-    }
-    memset(uart_rx_buffer, 0, sizeof(uart_rx_buffer));
 }
 
 void set_LED (bool LED_State) {
 	if (LED_State) HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 	else HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 }
-
 
 // button interupt IG_OFF -> IG_ON
 uint32_t last_debounce_time = 0;
@@ -221,7 +204,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
   }
 }
-
 /* USER CODE END 0 */
 
 /**
@@ -260,7 +242,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   MX_CAN1_Setup();
   MX_CAN2_Setup();
-  //__HAL_UART_ENABLE_IT(&huart3, UART_IT_RXNE);
+  __HAL_UART_ENABLE_IT(&huart3, UART_IT_RXNE);
+  HAL_UART_Receive_IT(&huart3, &REQ_1BYTE_DATA, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -271,73 +254,113 @@ int main(void)
 
   while (1)
   {
-	if(!BtnU) /*IG OFF->ON stimulation*/
-	{
-	  delay(20);
-	  USART3_SendString((uint8_t *)"IG OFF ");
-	  while(!BtnU);
-	  MX_CAN1_Setup();
-	  MX_CAN2_Setup();
-	  USART3_SendString((uint8_t *)"-> IG ON \n");
-	  delay(20);
-	}
-  set_LED(security_access_granted);
-  switch (currentState){
-		case STATE_PREPARING_FOR_CAN2_TRANSMISSION:
-			currentState = STATE_CAN2_TRANSMISSION;
-			receive_uart_string();
-			parse_hex_string((char*)uart_rx_buffer, parsed_values_from_uart, &parsed_values_from_uart_count);
+	  set_LED(security_access_granted);
+	  switch (currentState){
+			case STATE_PREPARING_FOR_CAN2_TRANSMISSION:
+				//Từ các giá trị lấy được ở UART, xây dựng CAN_frame
+				if (NumBytesReq != 0){
+					HAL_Delay(200);
 
-			//Từ các giá trị lấy được ở UART, xây dựng CAN_frame
-			prepare_CAN_TX_frame(CAN2_DATA_TX, parsed_values_from_uart, parsed_values_from_uart_count);
-			//Gửi CAN_frame
-			CAN2_SendMessage(CAN2_DATA_TX);
-			//Gửi lên UART cái CAN_frame ấy
-			PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
-			break;
+					if (REQ_BUFFER[0] == 0x27 && REQ_BUFFER[1] == 0x02){
+		  				currentState = STATE_PREPARING_FOR_CAN2_FIRST_FRAME;
+		  				break;
+					}
+					prepare_CAN_TX_frame(CAN2_DATA_TX, REQ_BUFFER, NumBytesReq);
+					//Gửi CAN_frame
+					currentState = STATE_CAN2_TRANSMISSION;
+					CAN2_SendMessage(CAN2_DATA_TX);
+					PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
+					memset(REQ_BUFFER, 0, 20);
+					NumBytesReq = 0;
+				}
 
-		case STATE_CAN2_TRANSMISSION:
-			break;
+				break;
 
-		case STATE_READING_CAN1_RECEPTION:
-			/*
-			 * Đọc CAN_Frame nhận được
-			 * CAN_Frame[0] chứa số phần tử ở đằng sau
-			 * CAN_Frame[1] chứa mã lệnh (SID) -> so sánh mã lệnh này có phải 1 trong 3 mã lệnh 22 27 2E không,
-			 * 	-> Nếu không: reset state machine và break
-			 * 	-> Nếu có: Đưa vào phương trình phân tích lệnh 22 27 2E
-			 */
-			switch (CAN1_DATA_RX[1]) {
-				case 0x22:
-					currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
-					SID_22_Practice();
-					break;
-				case 0x27:
-					currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
-					SID_27_Practice();
-					break;
-				case 0x2E:
-					currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
-					SID_2E_Practice();
-					break;
-				default:
-					currentState = STATE_PREPARING_FOR_CAN2_TRANSMISSION;
-					break;
-			}
-			break;
+	  		case STATE_CAN2_TRANSMISSION:
+	  			break;
 
-		case STATE_PREPARING_FOR_CAN1_TRANSMISSION:
-			currentState = STATE_CAN1_TRANSMISSION;
-			//Gửi CAN_frame
-			CAN1_SendMessage(CAN1_DATA_TX);
-			//Gửi lên UART cái CAN_frame ấy
-			PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
-			break;
+	  		case STATE_PREPARING_FOR_CAN2_FIRST_FRAME:
+	  			currentState = STATE_CAN2_TRANSMISSION;
 
-		case STATE_CAN1_TRANSMISSION:
-			break;
+				//Từ các giá trị lấy được ở UART, xây dựng CAN_frame
+				prepare_CAN_First_Frame(CAN2_DATA_TX, REQ_BUFFER, NumBytesReq);
+				//Gửi CAN_frame
+				CAN2_SendMessage(CAN2_DATA_TX);
+				PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
+				break;
 
-	}
+	  		case STATE_PREPARING_FOR_CAN2_FLOW_CONTROL:
+	  			currentState = STATE_CAN2_TRANSMISSION;
+	  			prepare_CAN_Flow_Control_Frame (CAN2_DATA_TX);
+	  			CAN2_SendMessage(CAN2_DATA_TX);
+	  			PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
+	  			break;
+
+	  		case STATE_PREPARING_FOR_CAN2_CONSECUTIVE_FRAME:
+	  			currentState = STATE_CAN2_TRANSMISSION;
+	  			prepare_CAN_Consecutive_Frames(CAN2_DATA_TX, &REQ_BUFFER[6], 2);
+				memset(REQ_BUFFER, 0, 20);
+				NumBytesReq = 0;
+	  			break;
+
+	  		case STATE_READING_CAN1_RECEPTION:
+	  			/*
+	  			 * Đọc CAN_Frame nhận được
+	  			 * CAN_Frame[0] chứa số phần tử ở đằng sau
+	  			 * CAN_Frame[1] chứa mã lệnh (SID) -> so sánh mã lệnh này có phải 1 trong 3 mã lệnh 22 27 2E không,
+	  			 * 	-> Nếu không: reset state machine và break
+	  			 * 	-> Nếu có: Đưa vào phương trình phân tích lệnh 22 27 2E
+	  			 */
+	  			switch (CAN1_DATA_RX[1]) {
+					case 0x22:
+						currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
+						SID_22_Practice();
+						break;
+					case 0x27:
+						currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
+						SID_27_Practice();
+						break;
+					case 0x2E:
+						currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
+						SID_2E_Practice();
+						break;
+					default:
+						currentState = STATE_PREPARING_FOR_CAN2_TRANSMISSION;
+						break;
+				}
+	  			break;
+
+	  		case STATE_PREPARING_FOR_CAN1_CONSECUTIVE_FRAME:
+	  			if (((CAN1_DATA_RX[0]) & 0x0F) == 0x02) currentState = STATE_PREPARING_FOR_CAN2_TRANSMISSION;
+	  			if (((CAN1_DATA_RX[0]) & 0x0F) == 0x00) {currentState = STATE_CAN1_TRANSMISSION;
+	  				SID_27_Practice();
+	  			}
+	  			break;
+
+	  		case STATE_PREPARING_FOR_CAN1_FLOW_CONTROL:
+	  			currentState = STATE_CAN1_TRANSMISSION;
+	  			SID_27_Practice();
+				CAN1_SendMessage(CAN1_DATA_TX);
+				PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
+				break;
+
+	  		case STATE_PREPARING_FOR_CAN1_SINGLE_FRAME:
+	  			currentState = STATE_CAN1_TRANSMISSION;
+	  			SID_27_Practice();
+	  			CAN1_SendMessage(CAN1_DATA_TX);
+	  		    PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
+	  		    break;
+
+	  		case STATE_PREPARING_FOR_CAN1_TRANSMISSION:
+	  			currentState = STATE_CAN1_TRANSMISSION;
+	  			CAN1_SendMessage(CAN1_DATA_TX);
+	  			PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
+	  			break;
+
+	  		case STATE_CAN1_TRANSMISSION:
+	  			break;
+
+	  	}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -603,7 +626,7 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI0_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 2, 0);
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -696,6 +719,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	REQ_BUFFER[NumBytesReq] = REQ_1BYTE_DATA;
 	NumBytesReq++;
+	HAL_UART_Receive_IT(&huart3, &REQ_1BYTE_DATA, 1);
+
 	//REQ_BUFFER[7] = NumBytesReq;
 }
 void delay(uint16_t delay)
