@@ -182,6 +182,7 @@ void receive_uart_string(void)
     // Do something with the received string
 }
 
+// convert hex to uint8_t
 void parse_hex_string(const char *input, uint8_t *output, uint8_t *count) {
     const char *ptr = input;
     int value;
@@ -201,6 +202,26 @@ void set_LED (bool LED_State) {
 	if (LED_State) HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 	else HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 }
+
+
+// button interupt IG_OFF -> IG_ON
+uint32_t last_debounce_time = 0;
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if (GPIO_Pin == GPIO_PIN_1) {
+    if (HAL_GetTick() - last_debounce_time > 200) // 200ms debounce
+    {
+      last_debounce_time = HAL_GetTick();
+
+      USART3_SendString((uint8_t *)"IG OFF ");
+      MX_CAN1_Setup();
+      MX_CAN2_Setup();
+      USART3_SendString((uint8_t *)"-> IG ON \n");
+    }
+  }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -250,65 +271,73 @@ int main(void)
 
   while (1)
   {
+	if(!BtnU) /*IG OFF->ON stimulation*/
+	{
+	  delay(20);
+	  USART3_SendString((uint8_t *)"IG OFF ");
+	  while(!BtnU);
 	  MX_CAN1_Setup();
 	  MX_CAN2_Setup();
-	  set_LED(security_access_granted);
-	  switch (currentState){
-	  		case STATE_PREPARING_FOR_CAN2_TRANSMISSION:
-	  			currentState = STATE_CAN2_TRANSMISSION;
-	  			receive_uart_string();
-	  			parse_hex_string((char*)uart_rx_buffer, parsed_values_from_uart, &parsed_values_from_uart_count);
+	  USART3_SendString((uint8_t *)"-> IG ON \n");
+	  delay(20);
+	}
+  set_LED(security_access_granted);
+  switch (currentState){
+		case STATE_PREPARING_FOR_CAN2_TRANSMISSION:
+			currentState = STATE_CAN2_TRANSMISSION;
+			receive_uart_string();
+			parse_hex_string((char*)uart_rx_buffer, parsed_values_from_uart, &parsed_values_from_uart_count);
 
-	  			//Từ các giá trị lấy được ở UART, xây dựng CAN_frame
-	  			prepare_CAN_TX_frame(CAN2_DATA_TX, parsed_values_from_uart, parsed_values_from_uart_count);
-	  			//Gửi CAN_frame
-	  			CAN2_SendMessage(CAN2_DATA_TX);
-	  			//Gửi lên UART cái CAN_frame ấy
-	  			PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
-	  			break;
+			//Từ các giá trị lấy được ở UART, xây dựng CAN_frame
+			prepare_CAN_TX_frame(CAN2_DATA_TX, parsed_values_from_uart, parsed_values_from_uart_count);
+			//Gửi CAN_frame
+			CAN2_SendMessage(CAN2_DATA_TX);
+			//Gửi lên UART cái CAN_frame ấy
+			PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
+			break;
 
-	  		case STATE_CAN2_TRANSMISSION:
-	  			break;
+		case STATE_CAN2_TRANSMISSION:
+			break;
 
-	  		case STATE_READING_CAN1_RECEPTION:
-	  			/*
-	  			 * Đọc CAN_Frame nhận được
-	  			 * CAN_Frame[0] chứa số phần tử ở đằng sau
-	  			 * CAN_Frame[1] chứa mã lệnh (SID) -> so sánh mã lệnh này có phải 1 trong 3 mã lệnh 22 27 2E không,
-	  			 * 	-> Nếu không: reset state machine và break
-	  			 * 	-> Nếu có: Đưa vào phương trình phân tích lệnh 22 27 2E
-	  			 */
-	  			switch (CAN1_DATA_RX[1]) {
-					case 0x22:
-						currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
-						SID_22_Practice();
-						break;
-					case 0x27:
-						currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
-						SID_27_Practice();
-						break;
-					case 0x2E:
-						currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
-						SID_2E_Practice();
-						break;
-					default:
-						currentState = STATE_PREPARING_FOR_CAN2_TRANSMISSION;
-						break;
-				}
-	  			break;
+		case STATE_READING_CAN1_RECEPTION:
+			/*
+			 * Đọc CAN_Frame nhận được
+			 * CAN_Frame[0] chứa số phần tử ở đằng sau
+			 * CAN_Frame[1] chứa mã lệnh (SID) -> so sánh mã lệnh này có phải 1 trong 3 mã lệnh 22 27 2E không,
+			 * 	-> Nếu không: reset state machine và break
+			 * 	-> Nếu có: Đưa vào phương trình phân tích lệnh 22 27 2E
+			 */
+			switch (CAN1_DATA_RX[1]) {
+				case 0x22:
+					currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
+					SID_22_Practice();
+					break;
+				case 0x27:
+					currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
+					SID_27_Practice();
+					break;
+				case 0x2E:
+					currentState = STATE_PREPARING_FOR_CAN1_TRANSMISSION;
+					SID_2E_Practice();
+					break;
+				default:
+					currentState = STATE_PREPARING_FOR_CAN2_TRANSMISSION;
+					break;
+			}
+			break;
 
-	  		case STATE_PREPARING_FOR_CAN1_TRANSMISSION:
-	  			currentState = STATE_CAN1_TRANSMISSION;
-	  			//Gửi CAN_frame
-	  			CAN1_SendMessage(CAN1_DATA_TX);
-	  			//Gửi lên UART cái CAN_frame ấy
-	  			PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
-	  			break;
+		case STATE_PREPARING_FOR_CAN1_TRANSMISSION:
+			currentState = STATE_CAN1_TRANSMISSION;
+			//Gửi CAN_frame
+			CAN1_SendMessage(CAN1_DATA_TX);
+			//Gửi lên UART cái CAN_frame ấy
+			PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
+			break;
 
-	  		case STATE_CAN1_TRANSMISSION:
-	  			break;
+		case STATE_CAN1_TRANSMISSION:
+			break;
 
-	  	}
+	}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -559,7 +588,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : PA1 */
   GPIO_InitStruct.Pin = GPIO_PIN_1;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -573,6 +602,9 @@ static void MX_GPIO_Init(void)
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

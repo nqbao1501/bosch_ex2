@@ -10,7 +10,7 @@ void generate_seed(){
         HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
         uint32_t adc_val = HAL_ADC_GetValue(&hadc1);
 
-        seed[i] = (uint8_t)((adc_val ^ (TimeStamp << i)) & 0xFF);
+        seed[i] = (uint8_t)((adc_val) & 0xFF);
         HAL_Delay(1);
 	}
 
