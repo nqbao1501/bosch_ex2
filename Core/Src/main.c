@@ -261,10 +261,11 @@ int main(void)
 				if (NumBytesReq != 0){
 					HAL_Delay(200);
 
-					if (REQ_BUFFER[0] == 0x27 && REQ_BUFFER[1] == 0x02){
+					if (REQ_BUFFER[0] == 0x27 && REQ_BUFFER[1] == 0x02 && NumBytesReq == 8){
 		  				currentState = STATE_PREPARING_FOR_CAN2_FIRST_FRAME;
 		  				break;
 					}
+
 					prepare_CAN_TX_frame(CAN2_DATA_TX, REQ_BUFFER, NumBytesReq);
 					//Gửi CAN_frame
 					currentState = STATE_CAN2_TRANSMISSION;

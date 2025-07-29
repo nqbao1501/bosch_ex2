@@ -57,7 +57,11 @@ void SID_27_Practice(){
 			prepare_CAN_First_Frame(CAN1_DATA_TX, data_buffer, 8);
 			return;
 		}
-		else {
+		else if (sub_func ==2){
+			prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x13);
+			return;
+		}
+		else{
 			prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x10);
 			return;
 		}
