@@ -73,6 +73,7 @@ void SID_27_Practice(){
 			uint8_t sub_func = CAN1_DATA_RX[3];
 
 			if (sub_func == 2){
+
 				if (len != 8){
 					//Loi 0x13: sai format
 					prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x13);
@@ -98,12 +99,17 @@ void SID_27_Practice(){
 
 	if (((CAN1_DATA_RX[0] >> 4) & 0xFF) == 0x02) {
 		memcpy(&key_from_user[4], &CAN1_DATA_RX[1], 2);
+		if (security_access_granted) {
+			prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x10);
+			return;
+		}
 		if (!validate_key(key_from_user)){
 			//key khong dung voi seed -> loi 0x35
 			prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x35);
 			seed_sent = !seed_sent;
 			return;
 		}
+
 
 		//Dung key -> positive response
 	    data_buffer[0] = SID + 0x40;
