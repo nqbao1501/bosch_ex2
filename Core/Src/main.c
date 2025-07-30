@@ -81,8 +81,8 @@ uint8_t  Flg_Consecutive = 0;
 uint8_t msg_counter = 0;
 uint8_t prev_msg_counter = 0;
 
-uint16_t ECU_ID = 0x0078;
-uint16_t Tester_ID = 0x00A2;
+uint16_t ECU_ID = 0x0712;
+uint16_t Tester_ID = 0x07A2;
 
 uint8_t block_size = 0x08;
 uint8_t ST_min = 0x19; //25 in decimal

@@ -23,7 +23,7 @@ extern CAN_TxHeaderTypeDef CAN1_pHeader;
 extern CAN_TxHeaderTypeDef CAN2_pHeader;
 extern bool security_access_granted ;
 extern bool seed_sent ;
-extern uint16_t ECU_ID;
+extern uint16_t Tester_ID;
 
 extern ADC_HandleTypeDef hadc1;
 

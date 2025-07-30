@@ -994,14 +994,14 @@ void SID_22_Practice(){
 	    data_buffer[2] = 0x23;
  8000926:	2323      	movs	r3, #35	@ 0x23
  8000928:	71bb      	strb	r3, [r7, #6]
-	    data_buffer[3] = (ECU_ID >> 8) & 0xFF;
+	    data_buffer[3] = (Tester_ID >> 8) & 0xFF;
  800092a:	4b0f      	ldr	r3, [pc, #60]	@ (8000968 <SID_22_Practice+0x8c>)
  800092c:	881b      	ldrh	r3, [r3, #0]
  800092e:	0a1b      	lsrs	r3, r3, #8
  8000930:	b29b      	uxth	r3, r3
  8000932:	b2db      	uxtb	r3, r3
  8000934:	71fb      	strb	r3, [r7, #7]
-	    data_buffer[4] = (ECU_ID) & 0xFF;
+	    data_buffer[4] = (Tester_ID) & 0xFF;
  8000936:	4b0c      	ldr	r3, [pc, #48]	@ (8000968 <SID_22_Practice+0x8c>)
  8000938:	881b      	ldrh	r3, [r3, #0]
  800093a:	b2db      	uxtb	r3, r3
@@ -1029,7 +1029,7 @@ void SID_22_Practice(){
  800095e:	bf00      	nop
  8000960:	200011ec 	.word	0x200011ec
  8000964:	200011e4 	.word	0x200011e4
- 8000968:	20000000 	.word	0x20000000
+ 8000968:	20000002 	.word	0x20000002
 
 0800096c <generate_seed>:
 /*********BOSCH BEA PROGRAM SKELETON DEMO CODE************/
@@ -1566,7 +1566,7 @@ void SID_2E_Practice(){
  8000cb8:	733b      	strb	r3, [r7, #12]
 	uint8_t data_buffer[8];
 
-	uint16_t temp_ECU_ID = ((CAN1_DATA_RX[4] << 8) | CAN1_DATA_RX[5]);
+	uint16_t temp_Tester_ID = ((CAN1_DATA_RX[4] << 8) | CAN1_DATA_RX[5]);
  8000cba:	4b25      	ldr	r3, [pc, #148]	@ (8000d50 <SID_2E_Practice+0xb4>)
  8000cbc:	791b      	ldrb	r3, [r3, #4]
  8000cbe:	b21b      	sxth	r3, r3
@@ -1627,7 +1627,7 @@ void SID_2E_Practice(){
  8000d18:	e017      	b.n	8000d4a <SID_2E_Practice+0xae>
 	}
 
-	if (temp_ECU_ID > 0x07FF) {
+	if (temp_Tester_ID > 0x07FF) {
  8000d1a:	897b      	ldrh	r3, [r7, #10]
  8000d1c:	f5b3 6f00 	cmp.w	r3, #2048	@ 0x800
  8000d20:	d306      	bcc.n	8000d30 <SID_2E_Practice+0x94>
@@ -1640,7 +1640,7 @@ void SID_2E_Practice(){
 		return;
  8000d2e:	e00c      	b.n	8000d4a <SID_2E_Practice+0xae>
 	}
-	ECU_ID = temp_ECU_ID;
+	Tester_ID = temp_Tester_ID;
  8000d30:	4a0a      	ldr	r2, [pc, #40]	@ (8000d5c <SID_2E_Practice+0xc0>)
  8000d32:	897b      	ldrh	r3, [r7, #10]
  8000d34:	8013      	strh	r3, [r2, #0]
@@ -1663,7 +1663,7 @@ void SID_2E_Practice(){
  8000d50:	200011ec 	.word	0x200011ec
  8000d54:	20001224 	.word	0x20001224
  8000d58:	200011e4 	.word	0x200011e4
- 8000d5c:	20000000 	.word	0x20000000
+ 8000d5c:	20000002 	.word	0x20000002
 
 08000d60 <HAL_CAN_RxFifo0MsgPendingCallback>:
 /* Private user code ---------------------------------------------------------*/

@@ -13,7 +13,7 @@ void SID_2E_Practice(){
 	uint8_t	DID_Low = CAN1_DATA_RX[3];
 	uint8_t data_buffer[8];
 
-	uint16_t temp_ECU_ID = ((CAN1_DATA_RX[4] << 8) | CAN1_DATA_RX[5]);
+	uint16_t temp_Tester_ID = ((CAN1_DATA_RX[4] << 8) | CAN1_DATA_RX[5]);
 
 	if (!security_access_granted){
 		prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x33);
@@ -30,11 +30,11 @@ void SID_2E_Practice(){
 		return;
 	}
 
-	if (temp_ECU_ID > 0x07FF) {
+	if (temp_Tester_ID > 0x07FF) {
 		prepare_negative_response_buffer(CAN1_DATA_TX, data_buffer, SID, 0x10);
 		return;
 	}
-	ECU_ID = temp_ECU_ID;
+	Tester_ID = temp_Tester_ID;
 	data_buffer[0] = SID + 0x40;
 	prepare_CAN_TX_frame(CAN1_DATA_TX, data_buffer, 1);
 
