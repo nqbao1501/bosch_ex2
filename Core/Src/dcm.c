@@ -71,10 +71,12 @@ void prepare_CAN_Consecutive_Frames (uint8_t* CAN_TX_frame, uint8_t* data, uint1
         // Send CAN frame here
         if (CAN_TX_frame == CAN1_DATA_TX) {
             CAN1_SendMessage(CAN_TX_frame);
+		    USART3_SendString((uint8_t *)"ECU: ");
             PrintCANLog(CAN1_pHeader.StdId, CAN_TX_frame);
         }
         if (CAN_TX_frame == CAN2_DATA_TX) {
 			CAN2_SendMessage(CAN_TX_frame);
+		    USART3_SendString((uint8_t *)"TESTER: ");
 			PrintCANLog(CAN2_pHeader.StdId, CAN_TX_frame);
         }
 

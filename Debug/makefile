@@ -63,8 +63,8 @@ all: main-build
 main-build: BEA_CAN2CAN_DEMO_TEN1HC_HUST2.elf secondary-outputs
 
 # Tool invocations
-BEA_CAN2CAN_DEMO_TEN1HC_HUST2.elf BEA_CAN2CAN_DEMO_TEN1HC_HUST2.map: $(OBJS) $(USER_OBJS) D:\Embedded\Bosch_Academi\Pratice_Official_2\01_Source\bosch_ex2\STM32F405RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "BEA_CAN2CAN_DEMO_TEN1HC_HUST2.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\Embedded\Bosch_Academi\Pratice_Official_2\01_Source\bosch_ex2\STM32F405RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BEA_CAN2CAN_DEMO_TEN1HC_HUST2.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+BEA_CAN2CAN_DEMO_TEN1HC_HUST2.elf BEA_CAN2CAN_DEMO_TEN1HC_HUST2.map: $(OBJS) $(USER_OBJS) C:\Users\Admin\Desktop\BOSCH\bosch_ex2\STM32F405RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "BEA_CAN2CAN_DEMO_TEN1HC_HUST2.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\Admin\Desktop\BOSCH\bosch_ex2\STM32F405RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BEA_CAN2CAN_DEMO_TEN1HC_HUST2.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

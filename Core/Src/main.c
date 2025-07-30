@@ -198,6 +198,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       last_debounce_time = HAL_GetTick();
 
       USART3_SendString((uint8_t *)"IG OFF ");
+
       MX_CAN1_Setup();
       MX_CAN2_Setup();
       USART3_SendString((uint8_t *)"-> IG ON \n");
@@ -270,6 +271,7 @@ int main(void)
 					//Gửi CAN_frame
 					currentState = STATE_CAN2_TRANSMISSION;
 					CAN2_SendMessage(CAN2_DATA_TX);
+				    USART3_SendString((uint8_t *)"TESTER: ");
 					PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
 					memset(REQ_BUFFER, 0, 20);
 					NumBytesReq = 0;
@@ -287,6 +289,7 @@ int main(void)
 				prepare_CAN_First_Frame(CAN2_DATA_TX, REQ_BUFFER, NumBytesReq);
 				//Gửi CAN_frame
 				CAN2_SendMessage(CAN2_DATA_TX);
+			    USART3_SendString((uint8_t *)"TESTER: ");
 				PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
 				break;
 
@@ -294,6 +297,7 @@ int main(void)
 	  			currentState = STATE_CAN2_TRANSMISSION;
 	  			prepare_CAN_Flow_Control_Frame (CAN2_DATA_TX);
 	  			CAN2_SendMessage(CAN2_DATA_TX);
+			    USART3_SendString((uint8_t *)"TESTER: ");
 	  			PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
 	  			break;
 
@@ -342,6 +346,7 @@ int main(void)
 	  			currentState = STATE_CAN1_TRANSMISSION;
 	  			SID_27_Practice();
 				CAN1_SendMessage(CAN1_DATA_TX);
+			    USART3_SendString((uint8_t *)"ECU: ");
 				PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
 				break;
 
@@ -349,12 +354,14 @@ int main(void)
 	  			currentState = STATE_CAN1_TRANSMISSION;
 	  			SID_27_Practice();
 	  			CAN1_SendMessage(CAN1_DATA_TX);
+			    USART3_SendString((uint8_t *)"ECU: ");
 	  		    PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
 	  		    break;
 
 	  		case STATE_PREPARING_FOR_CAN1_TRANSMISSION:
 	  			currentState = STATE_CAN1_TRANSMISSION;
 	  			CAN1_SendMessage(CAN1_DATA_TX);
+			    USART3_SendString((uint8_t *)"ECU: ");
 	  			PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
 	  			break;
 
